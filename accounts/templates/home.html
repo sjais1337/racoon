@@ -1,0 +1,15 @@
+{% extends "base.html" %} {% block title %}Welcome - Project Raccoon{% endblock %}
+
+{% block content %}
+<h1>Welcome to Project Raccoon</h1>
+<p>The platform for decentralized model training.</p>
+{% if user.is_authenticated %}
+    <p>Hello, {{ user.username }}!</p>
+    <p><a href="{% url 'dashboard' %}">Go to Dashboard</a> | <form id="logout-form" method="post" action="{% url 'logout' %}" style="display: inline;">
+        {% csrf_token %}
+        <button type="submit" class="link-button">Logout</button>
+    </form></p>
+{% else %}
+    <p><a href="{% url 'login' %}">Login</a> | <a href="{% url 'register' %}">Register</a></p>
+{% endif %}
+{% endblock %}

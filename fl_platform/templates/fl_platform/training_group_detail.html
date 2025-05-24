@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %} {% block title %}{{ group.name }} - Details{% endblock %}
+<style>
+    .messages-list .message {
+        padding: 10px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px;
+    }
+    .messages-list .message.success {
+        background-color: #e6ffe6; border-color: #a3d3a3; color: #006400;
+    }
+    .messages-list .message.error {
+        background-color: #ffe6e6; border-color: #f7a3a3; color: #A94442;
+    }
+    .messages-list .message.warning { /* For 'warning' tag and other fallbacks */
+        background-color: #fff3e0; border-color: #ffcc80; color: #e65100;
+    }
+    .messages-list .message.info {
+        background-color: #e7f3fe; border-color: #b3d7f9; color: #00529B;
+    }
+</style>
+{% block content %}
+    <h1>{{ group.name }}</h1>
+    {% if group.description %}<p><strong>Description:</strong> {{ group.description }}</p>{% endif %}
+    <p><em>Created: {{ group.created_at }}</em></p>
+
+    {% if messages %}
+    <ul class="messages-list" style="list-style-type: none; padding: 0;">
+            {% for message in messages %}
+                <li class="message {{ message.tags }}"> {{ message }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <hr>
+    <h2>Current Status</h2>
+    {% if active_global_model %}
+        <p><strong>Current Round:</strong> {{ active_global_model.round_number }}</p>
+        
+        {% if user.is_superuser %}
+            {% if unique_submitters > 0 %}
+                <div style="margin-top:15px; padding:10px; border:1px dashed orange;">
+                    <p>There are <strong>{{ unique_submitters }} submission(s)</strong> based on this Round {{ active_global_model.round_number }} model.</p>
+                    <form method="post" action="{% url 'trigger_aggregation' group_id=group.id model_id=active_global_model.id %}" onsubmit="return confirm('Are you sure you want to aggregate updates and create the next round global model?');">
+                        {% csrf_token %}
+                        <button type="submit">Aggregate Updates & Start Next Round</button>
+                    </form>
+                </div>
+            {% else %}
+                <p style="margin-top:15px; color: #777;">No client updates submitted yet for Round {{ active_global_model.round_number }}.</p>
+            {% endif %}
+        {% endif %}
+        
+        <p><strong>Model Last Updated:</strong> {{ active_global_model.created_at }}</p>
+        {% if active_global_model.accuracy %}
+            <p><strong>Latest Global Model Accuracy:</strong> {{ active_global_model.accuracy|floatformat:4 }}</p>
+        {% endif %}
+        
+        <div style="margin-top: 20px; padding:10px; border: 1px solid #eee; background-color:#f9f9f9;">
+            <h4>Training Kit for Round {{ active_global_model.round_number }} ({{ group.model_config_key }})</h4>
+            {% if active_global_model.model_weights_file %}
+                1. <a href="{% url 'download_global_model_weights' group_id=group.id model_id=active_global_model.id %}">Download Global Model Weights (Round {{ active_global_model.round_number }})</a><br>
+            {% else %}
+                Global model weights file not available for current round.<br>
+            {% endif %}
+
+            {% if current_model_config.client_script_name %}
+                2. <a href="{% static 'fl_platform/scripts/'|add:current_model_config.client_script_name %}" download>Download Client Trainer Script ({{ current_model_config.client_script_name }})</a>
+            {% else %}
+                2. <span>Client script for this group type is not specified in config.</span>
+            {% endif %}
+            <p style="font-size:0.9em; color: #555;">Run the script locally with your data and the downloaded weights, then upload the generated update file below.</p>
+        
+            {% if current_model_config.client_script_name %}
+            <div style="margin-top:15px; padding:10px; border-top: 1px dashed #ccc;">
+                <h5>Instructions:</h5>
+                <ol>
+                    <li>Make sure the following packages are installed, using: <code>pip install torch pandas scikit-learn</code> </li>
+                    <li>Run the script using a command similar to the following:
+                        <pre style="background-color: #eef; padding: 10px; border-radius: 4px; white-space: pre-wrap; word-wrap: break-word;"><code>python {{ current_model_config.client_script_name }} \
+                        --model_weights_path path/to/your/downloaded_global_model_round{{ active_global_model.round_number }}.pth \
+                        --data_path path/to/your/local_data.csv \
+                        --output_path ./my_updated_weights_round{{ active_global_model.round_number }}.pth \
+                        --model_config_key {{ group.model_config_key }} \
+                        --local_epochs 5 \
+                        --lr 0.01 \
+                        --noise_scale 0.0 # Set to >0 to add noise, e.g., 0.01</code></pre>
+                    <li>Adjust <code>--local_epochs</code>, <code>--lr</code> (learning rate), and <code>--noise_scale</code> as needed.</li>
+                    <li>After the script finishes, upload the generated output file (e.g., <code>my_updated_weights_round{{ active_global_model.round_number }}.pth</code>) using the form below.</li>
+                </ol>
+                <span style="display: flex"><b>Note: </b> If you are on a linux machine, you may need to setup a virtual environment before you are able to run the script properly. Install your packages while in the virtual environment and run the script in the same.</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div style="margin-top: 30px; padding:10px; border: 1px solid #ccc;">
+            <h3>Submit Your Local Updates for Round {{ active_global_model.round_number }}</h3>
+            <form method="post" enctype="multipart/form-data" action="{% url 'upload_client_update' group.id %}">
+                {% csrf_token %}
+                <p>
+                    <label for="id_weights_file">Upload your updated .pth file:</label>
+                    <input type="file" name="weights_file" accept=".pth" required id="id_weights_file">
+                </p>
+                <button type="submit">Upload Updates</button>
+            </form>
+        </div>
+
+    {% else %}
+        <p>No active global model found for this group yet. The training may not have started.</p>
+        {% if user.is_superuser %}
+        <form method="post" action="{% url 'initialize_global_model' group.id %}">
+            {% csrf_token %}
+            <button type="submit">Initialize First Model (Round 0)</button>
+        </form>
+        {% endif %}
+    {% endif %}
+
+    <h3 style="margin-top: 30px;">Model History (Recent Rounds)</h3>
+    <p style="margin-top: 30px;"><a href="{% url 'list_training_groups' %}">Back to Training Groups List</a></p>
+{% endblock %}
