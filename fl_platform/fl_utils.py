@@ -30,7 +30,7 @@ def server_aggregate_weights_util(base_model_state_dict_structure, client_model_
     aggregated_weights = copy.deepcopy(base_model_state_dict_structure)
 
     for key in aggregated_weights:
-        aggregated_weights[key] = torch.zeros_like(aggregated_weights[key], dtype=aggregated_weights[key].dtype) # Preserve dtype
+        aggregated_weights[key] = torch.zeros_like(aggregated_weights[key], dtype=aggregated_weights[key].dtype)
 
     num_clients_updated = len(client_model_state_dicts)
     for client_weights in client_model_state_dicts:
@@ -41,6 +41,6 @@ def server_aggregate_weights_util(base_model_state_dict_structure, client_model_
                 print(f"Warning: Key {key} not found in a client's weights during aggregation.")
 
     for key in aggregated_weights:
-        aggregated_weights[key] = torch.div(aggregated_weights[key], float(num_clients_updated)) # Ensure float division
+        aggregated_weights[key] = torch.div(aggregated_weights[key], float(num_clients_updated)) 
 
     return aggregated_weights
