@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Training Groups - Project Raccoon{% endblock %}
+
+{% block content %}
+<h1>Available Training Groups</h1>
+{% if training_groups %}
+    <ul>
+        {% for group in training_groups %}
+            <li>
+                <a href="{% url 'training_group_detail' group.id %}">{{ group.name }}</a>
+                {% if group.description %}<p>{{ group.description|truncatewords:30 }}</p>{% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>No training groups are currently available.</p>
+{% endif %}
+<p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+{% endblock %}
