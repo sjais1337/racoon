@@ -2,6 +2,8 @@
 
 This repository contains my work, and instructions to reproduce it, for the PClub Secretary Recruitment Task - Project Racoon. This implements a very basic Federated Learning algorithm using PyTorch and Scikit-Learn without using any frameworks/libraries dedicated to FL algorithms. The `datasets` folder contains the split data for each of the datasets into 3 parts.
 
+The LaTeX based Report for the same can be accessed here: https://drive.google.com/file/d/1LxFjZ1xlxoG0gIeMn1ra8O3B3AqKlYDO/view?usp=sharing
+
 I have chosen to work with a local client instead of a web-based implementation of local training to minimize the work needed, since it is supposed to be a PoC. Pre-processing has been included in the Local Training Client, given the expectation that data uploaded by various clients will not be pre-processed. 
 
 ### Deployment
